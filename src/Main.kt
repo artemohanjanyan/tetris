@@ -3,8 +3,8 @@ import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.events.KeyboardEvent
 import kotlin.browser.document
 import kotlin.browser.window
-
-typealias Field = Array<Array<Boolean>>
+import kotlin.js.Date
+import kotlin.random.Random
 
 fun main(args: Array<String>) {
     val canvas = document.getElementById("canvas") as HTMLCanvasElement
@@ -13,80 +13,52 @@ fun main(args: Array<String>) {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
-    val fieldRows = 20
-    val fieldColumns = 10
-    fun initField(rows: Int, columns: Int): Field {
-        return Array(rows) { Array(columns) { false } }
-    }
+    fun drawField(gameRunner: GameRunner) {
+        val cellWidth = canvas.width / gameRunner.field.columns
+        val cellHeight = canvas.height / gameRunner.field.rows
+        val padding = 2
 
-    fun moveField(field: Field, drow: Int, dcolumn: Int): Field {
-        val rows = field.size
-        val columns = field[0].size
-        val newField = initField(rows, columns)
-        for (row in 0 until rows) {
-            for (column in 0 until columns) {
-                val newRow = row + drow
-                val newColumn = column + dcolumn
-                if ((0 until rows).contains(newRow) && (0 until columns).contains(newColumn)) {
-                    newField[newRow][newColumn] = field[row][column]
-                }
-            }
-        }
-        return newField
-    }
-
-    val field = initField(fieldRows, fieldColumns)
-    var block = initField(fieldRows, fieldColumns)
-
-    field[fieldRows - 1][0] = true
-    field[fieldRows - 1][fieldColumns - 1] = true
-
-    block[0][5] = true
-
-    fun drawField(field: Field) {
-        val cellWidth = canvas.width / fieldColumns
-        val cellHeight = canvas.height / fieldRows
-        val padding = 5
-
-        for (row in 0 until fieldRows) {
-            for (column in 0 until fieldColumns) {
-                if (field[row][column]) {
-                    ctx.beginPath()
-                    ctx.fillRect(
-                            column * cellWidth + padding.toDouble(),
-                            row * cellHeight + padding.toDouble(),
-                            cellWidth - padding * 2.0,
-                            cellHeight - padding * 2.0
-                    )
-                    ctx.fillStyle = "#0095DD"
-                    ctx.fill()
-                    ctx.closePath()
-                }
-            }
+        gameRunner.cells.forEach {
+            ctx.beginPath()
+            ctx.fillRect(
+                    it.column * cellWidth + padding.toDouble(),
+                    it.row * cellHeight + padding.toDouble(),
+                    cellWidth - padding * 2.0,
+                    cellHeight - padding * 2.0
+            )
+            ctx.fillStyle = "#0095DD"
+            ctx.fill()
+            ctx.closePath()
         }
     }
+
+    val figures = listOf(figureLine, figureSquare, figureL1, figureL2, figureZ1, figureZ2)
+    val gameRunner = GameRunner(Field(20, 10), figures, object: FigureNGenerator {
+        val random = Random(Date.now().toLong())
+        override fun nextFigure(): Int = random.nextInt(figures.size)
+    })
 
     fun draw() {
         window.requestAnimationFrame { draw() }
         ctx.clearRect(0.0, 0.0, canvas.width.toDouble(), canvas.height.toDouble())
-        drawField(field)
-        drawField(block)
+        drawField(gameRunner)
     }
 
     fun iterate() {
-        block = moveField(block, 1, 0)
+        gameRunner.moveDown()
     }
 
     fun handleKeyboardEvent(event: KeyboardEvent) {
-        if (event.keyCode == 37) {
-            block = moveField(block, 0, -1)
-        } else if (event.keyCode == 39) {
-            block = moveField(block, 0, 1)
+        when (event.keyCode) {
+            37 -> gameRunner.moveLeft()
+            38 -> gameRunner.nextVariant()
+            39 -> gameRunner.moveRight()
+            40 -> gameRunner.moveDown()
         }
     }
 
     window.requestAnimationFrame { draw() }
-    window.setInterval({ iterate() }, 1000)
+    window.setInterval({ iterate() }, 200)
     document.onkeydown = {
         if (it is KeyboardEvent) {
             handleKeyboardEvent(it)

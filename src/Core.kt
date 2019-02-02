@@ -1,9 +1,9 @@
-data class Field1(val rows: Int, val columns: Int)
+data class Field(val rows: Int, val columns: Int)
 
 data class Cell(val row: Int, val column: Int) {
     operator fun plus(that: Cell) = Cell(this.row + that.row, this.column + that.column)
 
-    fun inside(field: Field1): Boolean = (0 until field.rows).contains(row) && (0 until field.columns).contains(column)
+    fun inside(field: Field): Boolean = (0 until field.rows).contains(row) && (0 until field.columns).contains(column)
 }
 
 interface CellSet {
@@ -11,10 +11,10 @@ interface CellSet {
 
     fun intersects(that: CellSet): Boolean = that.cells.any { this.cells.contains(it) }
 
-    fun inside(field: Field1): Boolean = cells.all { it.inside(field) }
+    fun inside(field: Field): Boolean = cells.all { it.inside(field) }
 }
 
-class FieldCellSet(val field: Field1): CellSet {
+class FieldCellSet(val field: Field): CellSet {
     private var cellsImpl = HashSet<Cell>()
 
     override val cells: Set<Cell>
@@ -79,7 +79,7 @@ interface FigureNGenerator {
     fun nextFigure(): Int
 }
 
-class GameRunner(val field: Field1, private val figures: List<FigureDescription>, private val figureNGenerator: FigureNGenerator): CellSet {
+class GameRunner(val field: Field, private val figures: List<FigureDescription>, private val figureNGenerator: FigureNGenerator): CellSet {
     private val fieldCellSet = FieldCellSet(field)
     private var currentFigure = nextFigure()
 
