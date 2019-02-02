@@ -25,15 +25,23 @@ class FieldCellSet(val field: Field): CellSet {
         cellsImpl.plusAssign(cellSet.cells)
     }
 
-    fun clearLastLine(): Boolean {
-        val lastLine = (0 until field.columns).map { Cell(field.rows - 1, it) }
-        return if (lastLine.all { cellsImpl.contains(it) }) {
-            lastLine.forEach { cellsImpl.remove(it) }
-            cellsImpl = cellsImpl.mapTo(HashSet()) { it + Cell(1, 0) }
-            true
-        } else {
-            false
+    fun clearFullLines(): Int {
+        var clearedLines = 0
+        (field.rows - 1 downTo 0).forEach { row ->
+            val rowCells = (0 until field.columns).map { Cell(row, it) }
+            if (rowCells.all { cellsImpl.contains(it) }) {
+                rowCells.forEach { cellsImpl.remove(it) }
+                cellsImpl = cellsImpl.mapTo(HashSet()) {
+                    if (it.row < row) {
+                        it + Cell(1, 0)
+                    } else {
+                        it
+                    }
+                }
+                clearedLines += 1
+            }
         }
+        return clearedLines
     }
 }
 
@@ -46,10 +54,6 @@ class Figure(private val center: Cell, private val variant: Int, private val des
     fun nextVariant() = Figure(center, (variant + 1) % description.variants.size, description)
 
     fun move(vector: Cell) = Figure(center + vector, variant, description)
-}
-
-fun tryMoveFigure(action: (Figure) -> Figure, figure: Figure, fieldCellSet: FieldCellSet): Figure? {
-    return action(figure).takeIf { it.inside(fieldCellSet.field) && !it.intersects(fieldCellSet) }
 }
 
 fun makeDescription(vararg cells: Cell): FigureDescription {
@@ -92,7 +96,9 @@ class GameRunner(val field: Field, private val figures: List<FigureDescription>,
     override val cells: Set<Cell>
         get() = fieldCellSet.cells + currentFigure.cells
 
-    private fun tryMoveCurrent(action: (Figure) -> Figure): Figure? = tryMoveFigure(action, currentFigure, fieldCellSet)
+    private fun tryMoveCurrent(action: (Figure) -> Figure): Figure? {
+        return action(currentFigure).takeIf { it.inside(fieldCellSet.field) && !it.intersects(fieldCellSet) }
+    }
 
     private fun replaceIfCanMove(action: (Figure) -> Figure): Figure? {
         return tryMoveCurrent(action)?.also {
@@ -117,7 +123,7 @@ class GameRunner(val field: Field, private val figures: List<FigureDescription>,
             it.move(Cell(1, 0))
         } ?: {
             fieldCellSet.addCellSet(currentFigure)
-            while (fieldCellSet.clearLastLine()) {}
+            fieldCellSet.clearFullLines()
             currentFigure = nextFigure()
         }()
     }
