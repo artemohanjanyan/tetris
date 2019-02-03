@@ -27,7 +27,7 @@ class Field(val fieldDimensions: FieldDimensions): CellSet {
 
     fun clearFullLines(): Int {
         var clearedLines = 0
-        (fieldDimensions.rows - 1 downTo 0).forEach { row ->
+        (0 until fieldDimensions.rows).forEach { row ->
             val rowCells = (0 until fieldDimensions.columns).map { Cell(row, it) }
             if (rowCells.all { cellsImpl.contains(it) }) {
                 rowCells.forEach { cellsImpl.remove(it) }
