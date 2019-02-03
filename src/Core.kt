@@ -1,9 +1,9 @@
-data class Field(val rows: Int, val columns: Int)
+data class FieldDimensions(val rows: Int, val columns: Int)
 
 data class Cell(val row: Int, val column: Int) {
     operator fun plus(that: Cell) = Cell(this.row + that.row, this.column + that.column)
 
-    fun inside(field: Field): Boolean = (0 until field.rows).contains(row) && (0 until field.columns).contains(column)
+    fun inside(fieldDimensions: FieldDimensions): Boolean = (0 until fieldDimensions.rows).contains(row) && (0 until fieldDimensions.columns).contains(column)
 }
 
 interface CellSet {
@@ -11,10 +11,10 @@ interface CellSet {
 
     fun intersects(that: CellSet): Boolean = that.cells.any { this.cells.contains(it) }
 
-    fun inside(field: Field): Boolean = cells.all { it.inside(field) }
+    fun inside(fieldDimensions: FieldDimensions): Boolean = cells.all { it.inside(fieldDimensions) }
 }
 
-class FieldCellSet(val field: Field): CellSet {
+class Field(val fieldDimensions: FieldDimensions): CellSet {
     private var cellsImpl = HashSet<Cell>()
 
     override val cells: Set<Cell>
@@ -27,8 +27,8 @@ class FieldCellSet(val field: Field): CellSet {
 
     fun clearFullLines(): Int {
         var clearedLines = 0
-        (field.rows - 1 downTo 0).forEach { row ->
-            val rowCells = (0 until field.columns).map { Cell(row, it) }
+        (fieldDimensions.rows - 1 downTo 0).forEach { row ->
+            val rowCells = (0 until fieldDimensions.columns).map { Cell(row, it) }
             if (rowCells.all { cellsImpl.contains(it) }) {
                 rowCells.forEach { cellsImpl.remove(it) }
                 cellsImpl = cellsImpl.mapTo(HashSet()) {
@@ -83,12 +83,12 @@ interface FigureNGenerator {
     fun nextFigure(): Int
 }
 
-class GameRunner(val field: Field, private val figures: List<FigureDescription>, private val figureNGenerator: FigureNGenerator): CellSet {
-    private val fieldCellSet = FieldCellSet(field)
+class GameRunner(val fieldDimensions: FieldDimensions, private val figures: List<FigureDescription>, private val figureNGenerator: FigureNGenerator): CellSet {
+    private val fieldCellSet = Field(fieldDimensions)
     private var currentFigure = nextFigure()
 
     private fun nextFigure(): Figure = Figure(
-            Cell(2, field.columns / 2),
+            Cell(2, fieldDimensions.columns / 2),
             0,
             figures[figureNGenerator.nextFigure() % figures.size]
     )
@@ -97,7 +97,7 @@ class GameRunner(val field: Field, private val figures: List<FigureDescription>,
         get() = fieldCellSet.cells + currentFigure.cells
 
     private fun tryMoveCurrent(action: (Figure) -> Figure): Figure? {
-        return action(currentFigure).takeIf { it.inside(fieldCellSet.field) && !it.intersects(fieldCellSet) }
+        return action(currentFigure).takeIf { it.inside(fieldCellSet.fieldDimensions) && !it.intersects(fieldCellSet) }
     }
 
     private fun replaceIfCanMove(action: (Figure) -> Figure): Figure? {

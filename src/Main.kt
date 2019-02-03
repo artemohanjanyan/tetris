@@ -14,8 +14,8 @@ fun main(args: Array<String>) {
     canvas.height = window.innerHeight
 
     fun drawField(gameRunner: GameRunner) {
-        val cellWidth = canvas.width / gameRunner.field.columns
-        val cellHeight = canvas.height / gameRunner.field.rows
+        val cellWidth = canvas.width / gameRunner.fieldDimensions.columns
+        val cellHeight = canvas.height / gameRunner.fieldDimensions.rows
         val padding = 2
 
         gameRunner.cells.forEach {
@@ -33,7 +33,7 @@ fun main(args: Array<String>) {
     }
 
     val figures = listOf(figureLine, figureSquare, figureL1, figureL2, figureZ1, figureZ2)
-    val gameRunner = GameRunner(Field(20, 10), figures, object: FigureNGenerator {
+    val gameRunner = GameRunner(FieldDimensions(20, 10), figures, object: FigureNGenerator {
         val random = Random(Date.now().toLong())
         override fun nextFigure(): Int = random.nextInt(figures.size)
     })
