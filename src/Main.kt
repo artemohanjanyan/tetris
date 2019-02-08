@@ -19,6 +19,7 @@ val figures = listOf(figureLine, figureSquare, figureL1, figureL2, figureZ1, fig
 fun main(args: Array<String>) {
     val canvas = document.getElementById("canvas") as HTMLCanvasElement
     val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
+    canvas.style.background = "azure"
 
     fun setCanvasSize() {
         var height = window.innerHeight
