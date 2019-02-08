@@ -6,12 +6,36 @@ import kotlin.browser.window
 import kotlin.js.Date
 import kotlin.random.Random
 
+val figureLine = makeDescription(Cell(-2, 0), Cell(-1, 0), Cell(0, 0), Cell(1, 0))
+val figureSquare = makeDescription(Cell(-1, -1), Cell(-1, 0), Cell(0, -1), Cell(0, 0))
+val figureL1 = makeDescription(Cell(-1, 0), Cell(0, 0), Cell(1, 0), Cell(1, 1))
+val figureL2 = mirror(figureL1)
+val figureZ1 = makeDescription(Cell(0, -1), Cell(0, 0), Cell(-1, 0), Cell(-1, 1))
+val figureZ2 = mirror(figureZ1)
+val figureT = makeDescription(Cell(0, -1), Cell(0, 0), Cell(0, 1), Cell(1, 0))
+
+val figures = listOf(figureLine, figureSquare, figureL1, figureL2, figureZ1, figureZ2, figureT)
+
 fun main(args: Array<String>) {
     val canvas = document.getElementById("canvas") as HTMLCanvasElement
     val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
 
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
+    fun setCanvasSize() {
+        with (canvas) {
+            println(clientWidth)
+            println(clientHeight)
+            width = clientWidth
+            height = clientHeight
+        }
+    }
+
+    setCanvasSize()
+    window.onresize = {
+        setCanvasSize()
+    }
+
+    canvas.width = canvas.clientWidth
+    canvas.height = canvas.clientHeight
 
     fun drawField(gameRunner: GameRunner) {
         val cellWidth = canvas.width / gameRunner.fieldDimensions.columns
@@ -32,7 +56,6 @@ fun main(args: Array<String>) {
         }
     }
 
-    val figures = listOf(figureLine, figureSquare, figureL1, figureL2, figureZ1, figureZ2)
     val gameRunner = GameRunner(FieldDimensions(20, 10), figures, object: FigureNGenerator {
         val random = Random(Date.now().toLong())
         override fun nextFigure(): Int = random.nextInt(figures.size)
@@ -58,7 +81,7 @@ fun main(args: Array<String>) {
     }
 
     window.requestAnimationFrame { draw() }
-    window.setInterval({ iterate() }, 200)
+    window.setInterval({ iterate() }, 300)
     document.onkeydown = {
         if (it is KeyboardEvent) {
             handleKeyboardEvent(it)
