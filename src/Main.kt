@@ -54,9 +54,9 @@ fun main(args: Array<String>) {
         }
     }
 
-    val gameRunner = GameRunner(FieldDimensions(20, 10), figures, object: FigureNGenerator {
+    val gameRunner = GameRunner(FieldDimensions(20, 10), object: FigureGenerator {
         val random = Random(Date.now().toLong())
-        override fun nextFigure(): Int = random.nextInt(figures.size)
+        override fun nextFigure(): FigureDescription = figures[random.nextInt(figures.size)]
     })
 
     fun draw() {

@@ -85,20 +85,19 @@ fun mirror(description: FigureDescription): FigureDescription {
     })
 }
 
-interface FigureNGenerator {
-    fun nextFigure(): Int
+interface FigureGenerator {
+    fun nextFigure(): FigureDescription
 }
 
 class GameRunner(val fieldDimensions: FieldDimensions,
-                 private val figures: List<FigureDescription>,
-                 private val figureNGenerator: FigureNGenerator): CellSet {
+                 private val figureGenerator: FigureGenerator): CellSet {
     private val fieldCellSet = Field(fieldDimensions)
     private var currentFigure = nextFigure()
 
     private fun nextFigure(): Figure = Figure(
             Cell(2, fieldDimensions.columns / 2),
             0,
-            figures[figureNGenerator.nextFigure() % figures.size]
+            figureGenerator.nextFigure()
     )
 
     override val cells: Set<Cell>
