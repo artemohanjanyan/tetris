@@ -21,12 +21,18 @@ fun main(args: Array<String>) {
     val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
 
     fun setCanvasSize() {
-        with (canvas) {
-            println(clientWidth)
-            println(clientHeight)
-            width = clientWidth
-            height = clientHeight
+        var height = window.innerHeight
+        var width = window.innerWidth
+        if (height < width * 2) {
+            width = height / 2
+        } else {
+            height = width * 2
         }
+        println("$height, $width")
+        canvas.style.height = "$height"
+        canvas.style.width = "$width"
+        canvas.height = height
+        canvas.width = width
     }
 
     setCanvasSize()
