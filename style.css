@@ -3,8 +3,21 @@ html, body {
   margin: 0;
 }
 
-#canvas {
-  width: 30%;
-  height: 100%;
-  background: "azure";
+#mainContainer {
+  display: flex;
+  flex-direction: row;
+  height: 100vmin;
+  width: 100vmin;
+}
+
+#fieldCanvas {
+  background: azure;
+  height: 100vmin;
+  width: 50vmin;
+ }
+
+#nextCanvas {
+  background: purple;
+  height: 25vmin;
+  width: 25vmin;
 }

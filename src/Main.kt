@@ -17,36 +17,27 @@ val figureT = makeDescription(Cell(0, -1), Cell(0, 0), Cell(0, 1), Cell(1, 0))
 val figures = listOf(figureLine, figureSquare, figureL1, figureL2, figureZ1, figureZ2, figureT)
 
 fun main(args: Array<String>) {
-    val canvas = document.getElementById("canvas") as HTMLCanvasElement
-    val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
-    canvas.style.background = "azure"
+    val fieldCanvas = document.getElementById("fieldCanvas") as HTMLCanvasElement
+    val nextCanvas = document.getElementById("nextCanvas") as HTMLCanvasElement
+    val ctx = fieldCanvas.getContext("2d") as CanvasRenderingContext2D
 
-    fun setCanvasSize() {
-        var height = window.innerHeight
-        var width = window.innerWidth
-        if (height < width * 2) {
-            width = height / 2
-        } else {
-            height = width * 2
-        }
-        println("$height, $width")
-        canvas.style.height = "$height"
-        canvas.style.width = "$width"
-        canvas.height = height
-        canvas.width = width
+    fun setCanvasSize(canvas: HTMLCanvasElement) {
+        canvas.height = canvas.clientHeight
+        canvas.width = canvas.clientWidth
     }
 
-    setCanvasSize()
+    fun onResize() {
+        setCanvasSize(fieldCanvas)
+        setCanvasSize(nextCanvas)
+    }
+    onResize()
     window.onresize = {
-        setCanvasSize()
+        onResize()
     }
-
-    canvas.width = canvas.clientWidth
-    canvas.height = canvas.clientHeight
 
     fun drawField(gameRunner: GameRunner) {
-        val cellWidth = canvas.width / gameRunner.fieldDimensions.columns
-        val cellHeight = canvas.height / gameRunner.fieldDimensions.rows
+        val cellWidth = fieldCanvas.width / gameRunner.fieldDimensions.columns
+        val cellHeight = fieldCanvas.height / gameRunner.fieldDimensions.rows
         val padding = 2
 
         gameRunner.cells.forEach {
@@ -70,7 +61,7 @@ fun main(args: Array<String>) {
 
     fun draw() {
         window.requestAnimationFrame { draw() }
-        ctx.clearRect(0.0, 0.0, canvas.width.toDouble(), canvas.height.toDouble())
+        ctx.clearRect(0.0, 0.0, fieldCanvas.width.toDouble(), fieldCanvas.height.toDouble())
         drawField(gameRunner)
     }
 
