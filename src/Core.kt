@@ -19,7 +19,11 @@ interface CellSet {
     fun inside(fieldDimensions: FieldDimensions): Boolean = cells.all {it.inside(fieldDimensions) }
 }
 
-class Field(val fieldDimensions: FieldDimensions): CellSet {
+interface HasFieldDimensions {
+    val fieldDimensions: FieldDimensions
+}
+
+class Field(override val fieldDimensions: FieldDimensions): CellSet, HasFieldDimensions {
     private var cellsImpl = HashSet<Cell>()
 
     override val cells: Set<Cell>
@@ -89,9 +93,9 @@ interface FigureGenerator {
     fun nextFigure(): FigureDescription
 }
 
-class GameRunner(val fieldDimensions: FieldDimensions,
-                 private val figureGenerator: FigureGenerator): CellSet {
-    private val fieldCellSet = Field(fieldDimensions)
+class GameRunner(override val fieldDimensions: FieldDimensions,
+                 private val figureGenerator: FigureGenerator): CellSet, HasFieldDimensions {
+    private val field = Field(fieldDimensions)
     private var currentFigure = nextFigure()
 
     private fun nextFigure(): Figure = Figure(
@@ -101,11 +105,11 @@ class GameRunner(val fieldDimensions: FieldDimensions,
     )
 
     override val cells: Set<Cell>
-        get() = fieldCellSet.cells + currentFigure.cells
+        get() = this.field.cells + currentFigure.cells
 
     private fun tryMoveCurrent(action: (Figure) -> Figure): Figure? {
         return action(currentFigure).takeIf {
-            it.inside(fieldCellSet.fieldDimensions) && !it.intersects(fieldCellSet)
+            it.inside(field.fieldDimensions) && !it.intersects(field)
         }
     }
 
@@ -131,8 +135,8 @@ class GameRunner(val fieldDimensions: FieldDimensions,
         replaceIfCanMove {
             it.move(Cell(1, 0))
         } ?: {
-            fieldCellSet.addCellSet(currentFigure)
-            fieldCellSet.clearFullLines()
+            field.addCellSet(currentFigure)
+            field.clearFullLines()
             currentFigure = nextFigure()
         }()
     }
