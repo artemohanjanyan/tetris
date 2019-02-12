@@ -33,18 +33,32 @@ class CanvasHelper(id: String) {
     }
 }
 
-class StatHelper(id: String, private val iterate: () -> Unit): GameEventListener {
-    private val scoreText = document.getElementById(id) as HTMLElement
-    private var intervalId = 0
+interface StatChangeListener {
+    fun scoreChanged(score: Int)
+    fun levelChanged(level: Int)
+}
+
+class StatManager(private val statChangeListener: StatChangeListener): GameEventListener {
     private var score = 0
     private var linesCleared = 0
 
+    private fun level(linesCleared: Int = this.linesCleared) = linesCleared / 10 + 1
+
+    fun initStat() {
+        statChangeListener.scoreChanged(score)
+        statChangeListener.levelChanged(level())
+    }
+
     override fun linesCleared(lineN: Int) {
-        updateInterval(lineN)
-        linesCleared += lineN
         if (lineN < 0) {
             throw IllegalArgumentException("can't clear negative number of lines")
         }
+
+        linesCleared += lineN
+        if (level(linesCleared - lineN) < level()) {
+            statChangeListener.levelChanged(level())
+        }
+
         score += when (lineN) {
             0 -> 0
             1 -> 100
@@ -53,22 +67,29 @@ class StatHelper(id: String, private val iterate: () -> Unit): GameEventListener
             4 -> 800
             else -> lineN * 250
         }
+        statChangeListener.scoreChanged(score)
+    }
+}
+
+class StatChangeListenerImpl(scoreId: String,
+                             levelId: String,
+                             private val iterate: () -> Unit): StatChangeListener {
+
+    private val scoreText = document.getElementById(scoreId) as HTMLElement
+    private val levelText = document.getElementById(levelId) as HTMLElement
+    private var intervalId = 0
+
+    override fun scoreChanged(score: Int) {
         scoreText.innerHTML = score.toString()
     }
 
-    fun initInterval() {
-        val level = linesCleared / 10 + 1
+    override fun levelChanged(level: Int) {
+        levelText.innerHTML = level.toString()
+
+        window.clearInterval(intervalId)
         val interval = 1000 * (3 / (2.0 + level)).pow(2.0/3)
         intervalId = window.setInterval(iterate, interval.toInt())
         println("initInterval $interval")
-    }
-
-    private fun updateInterval(lineN: Int) {
-        linesCleared += lineN
-        if ((linesCleared - lineN) / 10 < linesCleared / 10) {
-            window.clearInterval(intervalId)
-            initInterval()
-        }
     }
 }
 
@@ -128,14 +149,20 @@ fun main() {
         onResize()
     }
 
-    val cachingFigureGenerator = CachingFigureGenerator(cacheSize, figures, Random(Date.now().toLong()))
-    var statHelper: StatHelper? = null
-    val gameRunner = GameRunner(fieldDimensions, cachingFigureGenerator, object: GameEventListener {
-        override fun linesCleared(lineN: Int) {
-            statHelper?.linesCleared(lineN)
+    var statChangeListener: StatChangeListener? = null
+    val statManager = StatManager(object: StatChangeListener {
+        override fun scoreChanged(score: Int) {
+            statChangeListener?.scoreChanged(score)
+        }
+
+        override fun levelChanged(level: Int) {
+            statChangeListener?.levelChanged(level)
         }
     })
-    statHelper = StatHelper("score", gameRunner::moveDown)
+
+    val cachingFigureGenerator = CachingFigureGenerator(cacheSize, figures, Random(Date.now().toLong()))
+    val gameRunner = GameRunner(fieldDimensions, cachingFigureGenerator, statManager)
+    statChangeListener = StatChangeListenerImpl("score", "level", gameRunner::moveDown)
 
     fun draw(canvasHelper: CanvasHelper) {
         window.requestAnimationFrame { draw(canvasHelper) }
@@ -159,8 +186,8 @@ fun main() {
         }
     }
 
+    statManager.initStat()
     window.requestAnimationFrame { draw(fieldHelper) }
-    statHelper.initInterval()
     document.onkeydown = {
         handleKeyboardEvent(it)
     }
