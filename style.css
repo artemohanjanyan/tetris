@@ -16,12 +16,12 @@ html, body {
   width: 50vmin;
  }
 
- #nextContainer {
-   display: flex;
-   flex-direction: column;
-   height: 100vmin;
-   width: 20vmin;
- }
+#nextContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vmin;
+  width: 20vmin;
+}
 
 .nextPadding {
   background: AliceBlue;
@@ -38,5 +38,24 @@ html, body {
 .nextCanvas {
   background: AliceBlue;
   height: 20vmin;
+  width: 20vmin;
+}
+
+#scoreContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vmin;
+  width: 20vmin;
+}
+
+.scorePadding {
+  background: GhostWhite;
+  height: 5vmin;
+  width: 20vmin;
+}
+
+.scorePaddingText {
+  position: absolute;
+  height: 5vmin;
   width: 20vmin;
 }

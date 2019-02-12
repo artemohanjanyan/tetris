@@ -93,8 +93,13 @@ interface FigureGenerator {
     fun nextFigure(): FigureDescription
 }
 
+interface GameEventListener {
+    fun linesCleared(lineN: Int)
+}
+
 class GameRunner(override val fieldDimensions: FieldDimensions,
-                 private val figureGenerator: FigureGenerator): CellSet, HasFieldDimensions {
+                 private val figureGenerator: FigureGenerator,
+                 private val gameEventListener: GameEventListener): CellSet, HasFieldDimensions {
     private val field = Field(fieldDimensions)
     private var currentFigure = nextFigure()
 
@@ -136,7 +141,7 @@ class GameRunner(override val fieldDimensions: FieldDimensions,
             it.move(Cell(1, 0))
         } ?: {
             field.addCellSet(currentFigure)
-            field.clearFullLines()
+            gameEventListener.linesCleared(field.clearFullLines())
             currentFigure = nextFigure()
         }()
     }

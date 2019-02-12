@@ -1,5 +1,6 @@
 import org.w3c.dom.CanvasRenderingContext2D
 import org.w3c.dom.HTMLCanvasElement
+import org.w3c.dom.HTMLElement
 import org.w3c.dom.events.KeyboardEvent
 import kotlin.browser.document
 import kotlin.browser.window
@@ -28,6 +29,22 @@ class CanvasHelper(id: String) {
 
     fun clearRect() {
         context.clearRect(0.0, 0.0, canvas.width.toDouble(), canvas.height.toDouble())
+    }
+}
+
+class ScoreHelper(id: String): GameEventListener {
+    private val scoreText = document.getElementById(id) as HTMLElement
+    private var score = 0
+
+    override fun linesCleared(lineN: Int) {
+        score += when (lineN) {
+            1 -> 100
+            2 -> 300
+            3 -> 500
+            4 -> 800
+            else -> 0
+        }
+        scoreText.innerHTML = score.toString()
     }
 }
 
@@ -70,7 +87,7 @@ class CachingFigureGenerator(private val cacheSize: Int,
     }
 }
 
-fun main(args: Array<String>) {
+fun main() {
     val cacheSize = 4
     val fieldDimensions = FieldDimensions(20, 10)
     val nextFigureDimensions = FieldDimensions(5, 5)
@@ -88,7 +105,7 @@ fun main(args: Array<String>) {
     }
 
     val cachingFigureGenerator = CachingFigureGenerator(cacheSize, figures, Random(Date.now().toLong()))
-    val gameRunner = GameRunner(fieldDimensions, cachingFigureGenerator)
+    val gameRunner = GameRunner(fieldDimensions, cachingFigureGenerator, ScoreHelper("score"))
 
     fun draw(canvasHelper: CanvasHelper) {
         window.requestAnimationFrame { draw(canvasHelper) }
@@ -119,8 +136,6 @@ fun main(args: Array<String>) {
     window.requestAnimationFrame { draw(fieldHelper) }
     window.setInterval({ iterate() }, 300)
     document.onkeydown = {
-        if (it is KeyboardEvent) {
-            handleKeyboardEvent(it)
-        }
+        handleKeyboardEvent(it)
     }
 }
