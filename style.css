@@ -41,20 +41,20 @@ html, body {
   width: 20vmin;
 }
 
-#scoreContainer {
+#statContainer {
   display: flex;
   flex-direction: column;
   height: 100vmin;
   width: 20vmin;
 }
 
-.scorePadding {
+.statPadding {
   background: GhostWhite;
   height: 5vmin;
   width: 20vmin;
 }
 
-.scorePaddingText {
+.statPaddingText {
   position: absolute;
   height: 5vmin;
   width: 20vmin;

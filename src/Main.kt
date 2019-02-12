@@ -6,6 +6,7 @@ import kotlin.browser.document
 import kotlin.browser.window
 import kotlin.js.Date
 import kotlin.math.floor
+import kotlin.math.pow
 import kotlin.random.Random
 
 val figureLine = makeDescription(Cell(-2, 0), Cell(-1, 0), Cell(0, 0), Cell(1, 0))
@@ -32,19 +33,42 @@ class CanvasHelper(id: String) {
     }
 }
 
-class ScoreHelper(id: String): GameEventListener {
+class StatHelper(id: String, private val iterate: () -> Unit): GameEventListener {
     private val scoreText = document.getElementById(id) as HTMLElement
+    private var intervalId = 0
     private var score = 0
+    private var linesCleared = 0
 
     override fun linesCleared(lineN: Int) {
+        updateInterval(lineN)
+        linesCleared += lineN
+        if (lineN < 0) {
+            throw IllegalArgumentException("can't clear negative number of lines")
+        }
         score += when (lineN) {
+            0 -> 0
             1 -> 100
             2 -> 300
             3 -> 500
             4 -> 800
-            else -> 0
+            else -> lineN * 250
         }
         scoreText.innerHTML = score.toString()
+    }
+
+    fun initInterval() {
+        val level = linesCleared / 10 + 1
+        val interval = 1000 * (3 / (2.0 + level)).pow(2.0/3)
+        intervalId = window.setInterval(iterate, interval.toInt())
+        println("initInterval $interval")
+    }
+
+    private fun updateInterval(lineN: Int) {
+        linesCleared += lineN
+        if ((linesCleared - lineN) / 10 < linesCleared / 10) {
+            window.clearInterval(intervalId)
+            initInterval()
+        }
     }
 }
 
@@ -105,7 +129,13 @@ fun main() {
     }
 
     val cachingFigureGenerator = CachingFigureGenerator(cacheSize, figures, Random(Date.now().toLong()))
-    val gameRunner = GameRunner(fieldDimensions, cachingFigureGenerator, ScoreHelper("score"))
+    var statHelper: StatHelper? = null
+    val gameRunner = GameRunner(fieldDimensions, cachingFigureGenerator, object: GameEventListener {
+        override fun linesCleared(lineN: Int) {
+            statHelper?.linesCleared(lineN)
+        }
+    })
+    statHelper = StatHelper("score", gameRunner::moveDown)
 
     fun draw(canvasHelper: CanvasHelper) {
         window.requestAnimationFrame { draw(canvasHelper) }
@@ -120,10 +150,6 @@ fun main() {
         }
     }
 
-    fun iterate() {
-        gameRunner.moveDown()
-    }
-
     fun handleKeyboardEvent(event: KeyboardEvent) {
         when (event.keyCode) {
             37 -> gameRunner.moveLeft()
@@ -134,7 +160,7 @@ fun main() {
     }
 
     window.requestAnimationFrame { draw(fieldHelper) }
-    window.setInterval({ iterate() }, 300)
+    statHelper.initInterval()
     document.onkeydown = {
         handleKeyboardEvent(it)
     }
