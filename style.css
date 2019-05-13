@@ -3,18 +3,22 @@ html, body {
   margin: 0;
 }
 
-#mainContainer {
-  display: flex;
+#gameContainer {
+  display: none;
   flex-direction: row;
   height: 100vmin;
-  width: 100vmin;
+  width: 90vmin;
 }
 
 #fieldCanvas {
   background: Azure;
   height: 100vmin;
   width: 50vmin;
- }
+}
+
+/*
+Next
+*/
 
 #nextContainer {
   display: flex;
@@ -41,6 +45,10 @@ html, body {
   width: 20vmin;
 }
 
+/*
+Stats
+*/
+
 #statContainer {
   display: flex;
   flex-direction: column;
@@ -58,4 +66,30 @@ html, body {
   position: absolute;
   height: 5vmin;
   width: 20vmin;
+}
+
+/*
+Menu
+*/
+
+#menu {
+  display: flex;
+  flex-direction: column;
+  height: 100vmin;
+  width: 50vmin;
+}
+
+#menuStats {
+  display: none;
+  flex-direction: column;
+  height: 100vmin;
+  width: 50vmin;
+}
+
+#startButton {
+  font-size: xx-large;
+  padding-top: 2vmin;
+  padding-bottom: 2vmin;
+  padding-left: 5vmin;
+  padding-right: 5vmin;
 }

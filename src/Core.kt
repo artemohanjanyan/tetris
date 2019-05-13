@@ -95,6 +95,7 @@ interface FigureGenerator {
 
 interface GameEventListener {
     fun linesCleared(lineN: Int)
+    fun gameOver()
 }
 
 class GameRunner(override val fieldDimensions: FieldDimensions,
@@ -107,7 +108,11 @@ class GameRunner(override val fieldDimensions: FieldDimensions,
             Cell(2, fieldDimensions.columns / 2),
             0,
             figureGenerator.nextFigure()
-    )
+    ).apply {
+        if (field.intersects(this)) {
+            gameEventListener.gameOver()
+        }
+    }
 
     override val cells: Set<Cell>
         get() = this.field.cells + currentFigure.cells

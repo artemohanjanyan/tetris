@@ -1,6 +1,7 @@
 import org.w3c.dom.CanvasRenderingContext2D
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLElement
+import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.events.KeyboardEvent
 import kotlin.browser.document
 import kotlin.browser.window
@@ -38,7 +39,7 @@ interface StatChangeListener {
     fun levelChanged(level: Int)
 }
 
-class StatManager(private val statChangeListener: StatChangeListener): GameEventListener {
+class StatManager(private val statChangeListener: StatChangeListener) {
     private var score = 0
     private var linesCleared = 0
 
@@ -49,7 +50,11 @@ class StatManager(private val statChangeListener: StatChangeListener): GameEvent
         statChangeListener.levelChanged(level())
     }
 
-    override fun linesCleared(lineN: Int) {
+    fun getScore() = score
+
+    fun getLevel() = level()
+
+    fun linesCleared(lineN: Int) {
         if (lineN < 0) {
             throw IllegalArgumentException("can't clear negative number of lines")
         }
@@ -68,28 +73,6 @@ class StatManager(private val statChangeListener: StatChangeListener): GameEvent
             else -> lineN * 250
         }
         statChangeListener.scoreChanged(score)
-    }
-}
-
-class StatChangeListenerImpl(scoreId: String,
-                             levelId: String,
-                             private val iterate: () -> Unit): StatChangeListener {
-
-    private val scoreText = document.getElementById(scoreId) as HTMLElement
-    private val levelText = document.getElementById(levelId) as HTMLElement
-    private var intervalId = 0
-
-    override fun scoreChanged(score: Int) {
-        scoreText.innerHTML = score.toString()
-    }
-
-    override fun levelChanged(level: Int) {
-        levelText.innerHTML = level.toString()
-
-        window.clearInterval(intervalId)
-        val interval = 1000 * (3 / (2.0 + level)).pow(2.0/3)
-        intervalId = window.setInterval(iterate, interval.toInt())
-        println("initInterval $interval")
     }
 }
 
@@ -132,39 +115,103 @@ class CachingFigureGenerator(private val cacheSize: Int,
     }
 }
 
-fun main() {
-    val cacheSize = 4
-    val fieldDimensions = FieldDimensions(20, 10)
-    val nextFigureDimensions = FieldDimensions(5, 5)
+interface State {
+    fun attach()
+    fun detach()
+}
 
-    val fieldHelper = CanvasHelper("fieldCanvas")
-    val nextHelpers = (1..cacheSize).toList().map { CanvasHelper("nextCanvas$it") }
+class Context {
+    private var state: State? = null
 
-    fun onResize() {
-        fieldHelper.onResize()
-        nextHelpers.forEach { it.onResize() }
+    fun setState(newState: State?) {
+        state?.detach()
+        state = newState
+        state?.attach()
     }
-    onResize()
-    window.onresize = {
-        onResize()
+}
+
+abstract class StateImpl(protected val context: Context): State
+
+class MenuState(context: Context): StateImpl(context) {
+    private val menu = document.getElementById("menu") as HTMLElement
+    private val startButton = document.getElementById("startButton") as HTMLInputElement
+    private val menuStats = document.getElementById("menuStats") as HTMLElement
+    private val menuScore = document.getElementById("menuScore") as HTMLElement
+    private val menuLevel = document.getElementById("menuLevel") as HTMLElement
+
+    init {
+        println("here")
+        startButton.onclick = {
+            println("here2")
+            context.setState(GameState(context, this))
+        }
     }
 
-    var statChangeListener: StatChangeListener? = null
-    val statManager = StatManager(object: StatChangeListener {
+    fun setStats(score: Int, level: Int) {
+        menuStats.style.display = "flex"
+        menuScore.innerHTML = "Score: $score"
+        menuLevel.innerHTML = "Level: $level"
+    }
+
+    override fun attach() {
+        menu.style.display = "flex"
+    }
+
+    override fun detach() {
+        menu.style.display = "none"
+    }
+}
+
+class GameState(context: Context, private val menuState: MenuState): StateImpl(context) {
+    private val cacheSize = 4
+    private val fieldDimensions = FieldDimensions(20, 10)
+    private val nextFigureDimensions = FieldDimensions(5, 5)
+
+    private val gameContainer = document.getElementById("gameContainer") as HTMLElement
+    private val fieldHelper = CanvasHelper("fieldCanvas")
+    private val nextHelpers = (1..cacheSize).toList().map { CanvasHelper("nextCanvas$it") }
+    private val scoreText = document.getElementById("score") as HTMLElement
+    private val levelText = document.getElementById("level") as HTMLElement
+
+    private var intervalId = 0
+
+    private val statManager = StatManager(object: StatChangeListener {
         override fun scoreChanged(score: Int) {
-            statChangeListener?.scoreChanged(score)
+            scoreText.innerHTML = score.toString()
         }
 
         override fun levelChanged(level: Int) {
-            statChangeListener?.levelChanged(level)
+            levelText.innerHTML = level.toString()
+
+            window.clearInterval(intervalId)
+            val interval = 1000 * (3 / (2.0 + level)).pow(2.0/3)
+            intervalId = window.setInterval(gameRunner::moveDown, interval.toInt())
+            println("initInterval $interval")
+        }
+    })
+    private val cachingFigureGenerator = CachingFigureGenerator(cacheSize, figures, Random(Date.now().toLong()))
+    private val gameRunner: GameRunner = GameRunner(fieldDimensions, cachingFigureGenerator, object : GameEventListener {
+        override fun linesCleared(lineN: Int) {
+            statManager.linesCleared(lineN)
+        }
+
+        override fun gameOver() {
+            this@GameState.gameOver()
         }
     })
 
-    val cachingFigureGenerator = CachingFigureGenerator(cacheSize, figures, Random(Date.now().toLong()))
-    val gameRunner = GameRunner(fieldDimensions, cachingFigureGenerator, statManager)
-    statChangeListener = StatChangeListenerImpl("score", "level", gameRunner::moveDown)
+    private var running = true
 
-    fun draw(canvasHelper: CanvasHelper) {
+    private fun onResize() {
+        fieldHelper.onResize()
+        nextHelpers.forEach { it.onResize() }
+    }
+
+    private fun draw(canvasHelper: CanvasHelper) {
+        if (!running) {
+            return
+        }
+
         window.requestAnimationFrame { draw(canvasHelper) }
 
         canvasHelper.clearRect()
@@ -177,7 +224,7 @@ fun main() {
         }
     }
 
-    fun handleKeyboardEvent(event: KeyboardEvent) {
+    private fun handleKeyboardEvent(event: KeyboardEvent) {
         when (event.keyCode) {
             37 -> gameRunner.moveLeft()
             38 -> gameRunner.nextVariant()
@@ -186,9 +233,39 @@ fun main() {
         }
     }
 
-    statManager.initStat()
-    window.requestAnimationFrame { draw(fieldHelper) }
-    document.onkeydown = {
-        handleKeyboardEvent(it)
+    private fun gameOver() {
+        running = false
+        menuState.setStats(statManager.getScore(), statManager.getLevel())
+        context.setState(menuState)
     }
+
+    override fun attach() {
+        running = true
+
+        gameContainer.style.display = "flex"
+
+        onResize()
+        window.onresize = {
+            onResize()
+        }
+
+        statManager.initStat()
+        window.requestAnimationFrame { draw(fieldHelper) }
+        document.onkeydown = {
+            handleKeyboardEvent(it)
+        }
+    }
+
+    override fun detach() {
+        window.clearInterval(intervalId)
+        document.onkeydown = null
+        window.onresize = null
+        running = false
+        gameContainer.style.display = "none"
+    }
+}
+
+fun main() {
+    val context = Context()
+    context.setState(MenuState(context))
 }
